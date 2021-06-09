@@ -1,4 +1,4 @@
-module github.com/bartekpacia/dondu
+module github.com/knei-knurow/dondu
 
 go 1.16
 
