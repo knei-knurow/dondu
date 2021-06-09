@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -20,55 +20,113 @@ const (
 	ActionsURL = BaseURL + "/" + "akcje.php"  // actions subpage address
 )
 
-var (
-	username string
-	password string
-)
-
-var (
-	socketNumber int
-	socketState  int
-	minutes      int
-)
-
 func init() {
 	log.SetFlags(0)
 	log.SetPrefix("dondu: ")
 
-	flag.IntVar(&socketNumber, "socket", 0, "number of the socket to manipulate")
-	flag.IntVar(&socketState, "state", 0, "state to set on socket ")
-	flag.IntVar(&minutes, "minutes", 30, "time")
-	flag.Parse()
-
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("failed to load .env file")
+		log.Fatalln("failed to load .env file")
 	}
 
-	username = os.Getenv("DONDU_USERNAME")
-	password = os.Getenv("DONDU_PASSWORD")
-}
-
-func main() {
-	var err error
 	http.DefaultClient.Jar, err = cookiejar.New(nil)
 	if err != nil {
 		log.Fatalln("failed to create cookie jar")
 	}
+}
 
-	err = auth()
-	if err != nil {
-		log.Fatalln("failed to authencticate:", err)
+var enableCommand = cli.Command{
+	Name:  "enable",
+	Usage: "enable socket",
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:    "socket",
+			Aliases: []string{"s"},
+			Value:   -1,
+			Usage:   "number of the socket to enable",
+		},
+		&cli.IntFlag{
+			Name:    "minutes",
+			Aliases: []string{"m"},
+			Value:   30,
+			Usage:   "time after which to disable the socket",
+		},
+	},
+	Action: func(c *cli.Context) error {
+		err := login()
+		if err != nil {
+			return fmt.Errorf("login:", err)
+		}
+
+		socket := c.Int("socket")
+		minutes := c.Int("minutes")
+
+		err = update(socket, true, minutes)
+		if err != nil {
+			return fmt.Errorf("enable socket %d for %d minutes: %v", socket, minutes, err)
+		}
+
+		log.Printf("enabled socket %d for %d minutes\n", socket, minutes)
+		return nil
+	},
+}
+
+var disableCommand = cli.Command{
+	Name:  "disable",
+	Usage: "disable socket",
+	Flags: []cli.Flag{
+		&cli.IntFlag{
+			Name:    "socket",
+			Aliases: []string{"s"},
+			Value:   -1,
+			Usage:   "number of the socket to disable",
+		},
+	},
+	Action: func(c *cli.Context) error {
+		err := login()
+		if err != nil {
+			return fmt.Errorf("login: %v", err)
+		}
+
+		socket := c.Int("socket")
+
+		err = update(socket, false, 0)
+		if err != nil {
+			return fmt.Errorf("disable socket %d: %v", socket, err)
+		}
+
+		log.Printf("disabled socket %d\n", socket)
+		return nil
+	},
+}
+
+func main() {
+	var err error
+
+	app := &cli.App{
+		Name:  "dondu",
+		Usage: "Easily control our switchboard from the command line.",
+		Action: func(c *cli.Context) error {
+			log.Println("no commands passed")
+			return nil
+		},
+		Commands: []*cli.Command{
+			&enableCommand,
+			&disableCommand,
+		},
 	}
 
-	err = update()
+	err = app.Run(os.Args)
 	if err != nil {
-		log.Fatalln("failed to update the switchboard:", err)
+		log.Fatal(err)
 	}
 }
 
-// auth performs user authentication (sets the PHPSESSID cookie).
-func auth() error {
+// login performs user authentication (sets the PHPSESSID cookie).
+func login() error {
+	username := os.Getenv("DONDU_USERNAME")
+	password := os.Getenv("DONDU_PASSWORD")
+
 	data := url.Values{}
 	data.Set("login", username)
 	data.Set("haslo", password)
@@ -84,11 +142,16 @@ func auth() error {
 }
 
 // update modifies state of single socket on the switchboard.
-func update() error {
+func update(socket int, enabled bool, minutes int) error {
+	state := 0
+	if enabled {
+		state = 1
+	}
+
 	data := url.Values{}
-	data.Set("gniazdo_nr", strconv.Itoa(socketNumber))
-	data.Set("gniazdo_stan", strconv.Itoa(socketState))
-	data.Set("minuty", strconv.Itoa(socketState))
+	data.Set("gniazdo_nr", strconv.Itoa(socket))
+	data.Set("gniazdo_stan", strconv.Itoa(state))
+	data.Set("minuty", strconv.Itoa(minutes))
 	data.Set("rozdzielnia_zmien_stan", strconv.Itoa(1))
 
 	_, err := http.Post(ActionsURL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
