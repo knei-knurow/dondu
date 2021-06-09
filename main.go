@@ -55,7 +55,7 @@ var enableCommand = cli.Command{
 	Action: func(c *cli.Context) error {
 		err := login()
 		if err != nil {
-			return fmt.Errorf("login:", err)
+			return fmt.Errorf("login: %v", err)
 		}
 
 		socket := c.Int("socket")
