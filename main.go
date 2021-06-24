@@ -46,10 +46,10 @@ var enableCommand = cli.Command{
 			Usage:   "number of the socket to enable",
 		},
 		&cli.IntFlag{
-			Name:    "minutes",
-			Aliases: []string{"m"},
+			Name:    "time",
+			Aliases: []string{"t"},
 			Value:   30,
-			Usage:   "time after which to disable the socket",
+			Usage:   "time after which to disable the socket (minutes)",
 		},
 	},
 	Action: func(c *cli.Context) error {
@@ -59,7 +59,7 @@ var enableCommand = cli.Command{
 		}
 
 		socket := c.Int("socket")
-		minutes := c.Int("minutes")
+		minutes := c.Int("time")
 
 		err = update(socket, true, minutes)
 		if err != nil {

@@ -14,11 +14,11 @@ Dondu lets you easily use our Knurów-switchboard.
 
 `$ dondu enable --socket 4` (30 minutes by default)
 
-`$ dondu enable --socket 4 --minutes 60`
+`$ dondu enable --socket 4 --time 60` (60 minutes)
 
 or, shorter:
 
-`$ dondu enable -s 4 -m 60`
+`$ dondu enable -s 4 -t 60`
 
 To disable a socket:
 
