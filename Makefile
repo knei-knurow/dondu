@@ -1,4 +1,8 @@
-GC := go
-
 all:
-	$(GC) build -o dondu main.go
+	go build -o dondu main.go
+
+install:
+	cp ./dondu /usr/local/bin
+
+clean:
+	rm ./dondu
