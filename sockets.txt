@@ -1,0 +1,6 @@
+1. serwa CRON
+2. switch 24 porty CRON
+3. odroid CRON
+4. lampa led CRON
+5. jetson CRON
+6. lidar CRON
