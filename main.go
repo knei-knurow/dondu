@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,15 +19,19 @@ const (
 	ActionsURL = BaseURL + "/" + "akcje.php"  // actions subpage address
 )
 
+var (
+	username string
+	password string
+)
+
 func init() {
 	log.SetFlags(0)
 	log.SetPrefix("dondu: ")
 
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalln("failed to load .env file")
-	}
+	username = os.Getenv("DONDU_USERNAME")
+	password = os.Getenv("DONDU_PASSWORD")
 
+	var err error
 	http.DefaultClient.Jar, err = cookiejar.New(nil)
 	if err != nil {
 		log.Fatalln("failed to create cookie jar")
@@ -53,7 +56,7 @@ var enableCommand = cli.Command{
 		},
 	},
 	Action: func(c *cli.Context) error {
-		err := login()
+		err := login(username, password)
 		if err != nil {
 			return fmt.Errorf("login: %v", err)
 		}
@@ -83,7 +86,7 @@ var disableCommand = cli.Command{
 		},
 	},
 	Action: func(c *cli.Context) error {
-		err := login()
+		err := login(username, password)
 		if err != nil {
 			return fmt.Errorf("login: %v", err)
 		}
@@ -123,10 +126,7 @@ func main() {
 }
 
 // login performs user authentication (sets the PHPSESSID cookie).
-func login() error {
-	username := os.Getenv("DONDU_USERNAME")
-	password := os.Getenv("DONDU_PASSWORD")
-
+func login(username string, password string) error {
 	data := url.Values{}
 	data.Set("login", username)
 	data.Set("haslo", password)

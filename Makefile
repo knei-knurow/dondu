@@ -1,4 +1,4 @@
-all:
+all: main.go
 	go build -o dondu main.go
 
 install:
